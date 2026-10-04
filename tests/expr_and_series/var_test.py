@@ -48,3 +48,13 @@ def test_var_series(
         "z_ddof_0": [df["z"].var(ddof=0)],
     }
     assert_equal_data(result, expected_results)
+
+
+def test_var_ddof_gt_1_non_integer_scale(constructor: Constructor) -> None:
+    # https://github.com/narwhals-dev/narwhals/issues/4020
+    # `(n - 1) / (n - ddof)` is not an integer here, which catches backends
+    # that truncate the scaling factor instead of dividing (e.g. DuckDB's
+    # integer `divide`).
+    df = nw.from_native(constructor({"a": [1.0, 2.0, 3.0, 4.0]}))
+    result = df.select(nw.col("a").var(ddof=2).alias("v"))
+    assert_equal_data(result, {"v": [2.5]})

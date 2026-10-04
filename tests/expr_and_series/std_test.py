@@ -44,3 +44,13 @@ def test_std_series(
         "z_ddof_0": [df["z"].std(ddof=0)],
     }
     assert_equal_data(result, expected_results)
+
+
+def test_std_ddof_gt_1_non_integer_scale(constructor: Constructor) -> None:
+    # https://github.com/narwhals-dev/narwhals/issues/4020
+    # `(n - 1) / (n - ddof)` is not an integer here, which catches backends
+    # that truncate the scaling factor instead of dividing (e.g. DuckDB's
+    # integer `divide`).
+    df = nw.from_native(constructor({"a": [1.0, 2.0, 3.0, 4.0]}))
+    result = df.select(nw.col("a").std(ddof=2).alias("s"))
+    assert_equal_data(result, {"s": [1.5811388300841898]})
